@@ -1,0 +1,84 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. SimpleTCPClient.
+
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       SPECIAL-NAMES.
+           CALL "socket"    AS "socket".
+           CALL "connect"   AS "connect".
+           CALL "send"      AS "send".
+           CALL "recv"      AS "recv".
+           CALL "close"     AS "close".
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01  WS-SOCKET            USAGE POINTER.
+       01  WS-ADDRESS.
+           05  WS-IP            PIC X(15) VALUE "127.0.0.1".
+           05  WS-PORT          PIC 9(5)  VALUE 8080.
+       01  WS-MESSAGE           PIC X(100) VALUE "Hello Server!".
+       01  WS-RESPONSE          PIC X(100).
+       01  WS-STATUS            PIC S9(9) COMP.
+       01  WS-RECV-LENGTH       PIC S9(9) COMP VALUE 100.
+
+       PROCEDURE DIVISION.
+       MAIN-PARAGRAPH.
+           DISPLAY "Starting TCP Client...".
+
+           * Create the socket
+           CALL "socket" USING BY VALUE 2          * AF_INET
+                              BY VALUE 1          * SOCK_STREAM
+                              RETURNING WS-SOCKET.
+
+           IF WS-SOCKET = NULL
+               DISPLAY "Error creating socket."
+               STOP RUN
+           END-IF.
+
+           DISPLAY "Socket created."
+
+           * Set up the server address
+           MOVE WS-IP TO WS-ADDRESS
+           MOVE WS-PORT TO WS-ADDRESS(15:5).
+
+           * Connect to the server
+           CALL "connect" USING WS-SOCKET
+                              WS-ADDRESS
+                              RETURNING WS-STATUS.
+
+           IF WS-STATUS NOT = 0
+               DISPLAY "Error connecting to server."
+               STOP RUN
+           END-IF.
+
+           DISPLAY "Connected to server."
+
+           * Send a message
+           CALL "send" USING WS-SOCKET
+                          WS-MESSAGE
+                          LENGTH OF WS-MESSAGE
+                          RETURNING WS-STATUS.
+
+           IF WS-STATUS NOT = 0
+               DISPLAY "Error sending data."
+           END-IF.
+
+           DISPLAY "Data sent: " WS-MESSAGE.
+
+           * Receive a response
+           CALL "recv" USING WS-SOCKET
+                          WS-RESPONSE
+                          WS-RECV-LENGTH
+                          RETURNING WS-STATUS.
+
+           IF WS-STATUS NOT = 0
+               DISPLAY "Error receiving data."
+           ELSE
+               DISPLAY "Received response: " WS-RESPONSE.
+           END-IF.
+
+           * Close the socket
+           CALL "close" USING WS-SOCKET.
+
+           DISPLAY "Connection closed."
+           STOP RUN.
